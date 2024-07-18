@@ -1738,6 +1738,43 @@ Error gc_execute_line(char* line) {
 
     // TODO: % to denote start of program.
     return Error::Ok;
+    /// @param feed_rate 
+    void update_pwm_based_on_feed_rate(float feed_rate) {
+    // Calculate PWM value based on feed rate
+    float min_feed_rate = 100;
+    float max_feed_rate = 1000;
+    int min_pwm = 0;
+    int max_pwm = 150;
+
+    int pwm_value = min_pwm + (feed_rate - min_feed_rate) * (max_pwm - min_pwm) / (max_feed_rate - min_feed_rate);
+
+    // Ensure PWM value is within the valid range
+    if (pwm_value < min_pwm) pwm_value = min_pwm;
+    if (pwm_value > max_pwm) pwm_value = max_pwm;
+
+    // Set the PWM output
+    spindle_set_speed(pwm_value);
+}
+void process_gcode_line(char *line) {
+    // Existing code to parse and execute G-code commands
+
+    // Extract the feed rate from the G-code line
+    float feed_rate = parse_feed_rate(line);
+
+    // Update the PWM output based on the feed rate
+    update_pwm_based_on_feed_rate(feed_rate);
+
+    // Continue processing the G-code line
+    execute_gcode(line);
+}
+float parse_feed_rate(const char *line) {
+    // Simple example of extracting the feed rate from a G-code line
+    const char *f_pos = strchr(line, 'F');
+    if (f_pos != nullptr) {
+        return atof(f_pos + 1);  // Convert feed rate value to float
+    }
+    return 0.0;  // Default feed rate if none is found
+}
 }
 
 /*
